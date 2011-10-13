@@ -1,19 +1,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <SDL/SDL.h>
 #include <GL/glew.h>
 
-typedef struct audio_callback_userdata_t
-{
-    SDL_AudioSpec audiospec;
-} audio_callback_userdata_t;
-
-static void audio_callback(void *userdata, uint8_t *stream, int len)
-{
-    for(int i = 0; i < len; ++i)
-        stream[i] = rand() % 0xff;
-}
+#include <synth.h>
+#include <audio_output.h>
 
 static int main_loop()
 {
@@ -69,7 +62,7 @@ int main(int argc, char *argv[])
     SDL_AudioSpec desired_audio_spec, obtained_audio_spec;
     desired_audio_spec.freq = 44100;
     desired_audio_spec.format = AUDIO_U16SYS;
-    desired_audio_spec.channels = 2;
+    desired_audio_spec.channels = 1;
     desired_audio_spec.samples = 1024;
     desired_audio_spec.callback = audio_callback;
     desired_audio_spec.userdata = &audio_callback_userdata;
@@ -77,6 +70,11 @@ int main(int argc, char *argv[])
     if(SDL_OpenAudio(&desired_audio_spec, &obtained_audio_spec) != 0)
         return -1;
     atexit(SDL_CloseAudio);
+
+    synth_t synth;
+    synth_init(&synth, obtained_audio_spec.freq);
+
+    audio_callback_userdata.synth = &synth;
     audio_callback_userdata.audiospec = obtained_audio_spec;
 
     SDL_PauseAudio(0);
@@ -84,6 +82,8 @@ int main(int argc, char *argv[])
     int err = main_loop();
 
     SDL_PauseAudio(1);
+
+    synth_cleanup(&synth);
 
     SDL_CloseAudio();
     SDL_Quit();
