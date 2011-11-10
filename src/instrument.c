@@ -1,6 +1,28 @@
+#include <stdlib.h>
 #include <math.h>
 
 #include <instrument.h>
+
+static float zero(float phase) { (void)phase; return 0; }
+static float sine(float phase) { return sinf(phase); }
+static float square(float phase) { return phase <= M_PI ? 1.0 : -1.0; }
+static float sawtooth(float phase) { return -1.0 + 2.0 * fmod(phase / M_PI, 1.0); }
+static float noise(float phase) { (void)phase; return rand() / (float)RAND_MAX; }
+static float triangle(float phase)
+{
+    if(phase < M_PI/2.0) return phase / (M_PI/2.0);
+    if(phase <= 3.0*M_PI/2.0) return 1.0 - 2.0 * (phase-M_PI/2.0)/M_PI;
+    return -1.0 + (phase - 3.0*M_PI/2.0) / (M_PI/2.0);
+}
+
+float oscillator(oscillator_t *osc, int sample_rate)
+{
+    typedef float (*wave_fun)(float);
+    wave_fun waves[] = { zero, sine, square, sawtooth, triangle, noise };
+    float sample = osc->amplitude * waves[osc->waveform](osc->phase);
+    osc->phase = fmod(osc->phase + osc->freq * 2.0 * M_PI / sample_rate, 2.0 * M_PI);
+    return sample;
+}
 
 void adsr_set(adsr_t *adsr, int sample_rate, float attack, float decay, float sustain, float release)
 {
@@ -22,7 +44,7 @@ void adsr_trigger(adsr_t *adsr)
     adsr->decay_timer = 0;
 }
 
-void adsr_envelope(adsr_t *adsr)
+float adsr_envelope(adsr_t *adsr)
 {
     adsr->envelope = adsr->adsrG * (adsr->envelope - adsr->adsrX) + adsr->adsrX;
 
@@ -41,6 +63,8 @@ void adsr_envelope(adsr_t *adsr)
         adsr->adsrG = adsr->releaseG;
         adsr->adsrX = 0.0;
     }
+
+    return adsr->envelope;
 }
 
 void filter_set(filter_t *filter, int sample_rate, filter_type_t type, float f0, float Q, float dBgain)
@@ -146,14 +170,11 @@ float filter(const filter_t *filter, filter_state_t *state, float sample)
 
 void instrument_play(instrument_t *instrument, int sample_rate, float *left, float *right)
 {
-    adsr_envelope(&instrument->adsr);
-
-    float sample = instrument->adsr.envelope * instrument->amplitude *
-        (instrument->phase <= M_PI ? 1.0 : -1.0); // sinf(instrument->phase);
-    instrument->phase = fmod(instrument->phase + instrument->freq * 2.0 * M_PI / sample_rate, 2.0 * M_PI);
-
-    sample = filter(&instrument->filter, &instrument->filter0, sample);
-    sample = filter(&instrument->filter, &instrument->filter1, sample);
+    float sample =
+        filter(&instrument->filter, &instrument->filter1,
+            filter(&instrument->filter, &instrument->filter0,
+                adsr_envelope(&instrument->adsr) *
+                oscillator(&instrument->oscillator, sample_rate)));
 
     *left = sample;
     *right = sample;

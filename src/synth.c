@@ -19,16 +19,17 @@ int synth_init(synth_t *synth, int sample_rate)
         instrument != synth->instruments + SYNTH_MAX_INSTRUMENTS;
         ++instrument)
     {
+        instrument->oscillator.waveform = OSCILLATOR_TRIANGLE;
         adsr_set(&instrument->adsr, sample_rate, 0.1, 1.0, 0.7, 1.5);
-        filter_set(&instrument->filter, sample_rate, FILTER_LOWPASS, 500, 0.5, 0.5);
+        filter_set(&instrument->filter, sample_rate, FILTER_NONE, 500, 0.5, 0.5);
     }
 
-    synth->instruments[0].freq = note_freq(60);
-    synth->instruments[0].amplitude = 0.3;
-    synth->instruments[1].freq = note_freq(64);
-    synth->instruments[1].amplitude = 0.2;
-    synth->instruments[2].freq = note_freq(67);
-    synth->instruments[2].amplitude = 0.2;
+    synth->instruments[0].oscillator.freq = note_freq(60);
+    synth->instruments[0].oscillator.amplitude = 0.3;
+    synth->instruments[1].oscillator.freq = note_freq(64);
+    synth->instruments[1].oscillator.amplitude = 0.2;
+    synth->instruments[2].oscillator.freq = note_freq(67);
+    synth->instruments[2].oscillator.amplitude = 0.2;
 
     return 0;
 }
