@@ -15,13 +15,37 @@ static float triangle(float phase)
     return -1.0 + (phase - 3.0*M_PI/2.0) / (M_PI/2.0);
 }
 
-float oscillator(oscillator_t *osc, int sample_rate)
+float oscillator(oscillator_t *osc, int sample_rate, float freq_mod)
 {
     typedef float (*wave_fun)(float);
     wave_fun waves[] = { zero, sine, square, sawtooth, triangle, noise };
     float sample = osc->amplitude * waves[osc->waveform](osc->phase);
-    osc->phase = fmod(osc->phase + osc->freq * 2.0 * M_PI / sample_rate, 2.0 * M_PI);
+    osc->phase = fmod(osc->phase + freq_mod * osc->freq * 2.0 * M_PI / sample_rate, 2.0 * M_PI);
     return sample;
+}
+
+float modulate(modulation_t modulation, int sample_rate, oscillator_t *carrier, oscillator_t *modulator)
+{
+    switch(modulation)
+    {
+        case MODULATION_NONE:
+            oscillator(modulator, sample_rate, 1.0); // update phase, ignore result
+            return oscillator(carrier, sample_rate, 1.0);
+        case MODULATION_RING:
+            return oscillator(carrier, sample_rate, 1.0) * oscillator(modulator, sample_rate, 1.0);
+        case MODULATION_AMPLITUDE:
+            return oscillator(carrier, sample_rate, 1.0) * (1.0 + oscillator(modulator, sample_rate, carrier->freq));
+        case MODULATION_FREQUENCY:
+            return oscillator(carrier, sample_rate, 1.0 + oscillator(modulator, sample_rate, carrier->freq));
+        case MODULATION_TREMOLO:
+            return oscillator(carrier, sample_rate, 1.0) * (1.0 + oscillator(modulator, sample_rate, 1.0));
+        case MODULATION_VIBRATO:
+            return oscillator(carrier, sample_rate, 1.0 + oscillator(modulator, sample_rate, 1.0));
+        default:
+            break;
+    }
+
+    return 0;
 }
 
 void adsr_set(adsr_t *adsr, int sample_rate, float attack, float decay, float sustain, float release)
@@ -174,7 +198,7 @@ void instrument_play(instrument_t *instrument, int sample_rate, float *left, flo
         filter(&instrument->filter, &instrument->filter1,
             filter(&instrument->filter, &instrument->filter0,
                 adsr_envelope(&instrument->adsr) *
-                oscillator(&instrument->oscillator, sample_rate)));
+                modulate(instrument->modulation, sample_rate, &instrument->carrier, &instrument->modulator)));
 
     *left = sample;
     *right = sample;

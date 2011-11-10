@@ -19,7 +19,19 @@ typedef struct oscillator_t
     float amplitude;
 } oscillator_t;
 
-float oscillator(oscillator_t *osc, int sample_rate);
+float oscillator(oscillator_t *osc, int sample_rate, float freq_mod);
+
+typedef enum modulation_t
+{
+    MODULATION_NONE = 0,
+    MODULATION_AMPLITUDE,
+    MODULATION_FREQUENCY,
+    MODULATION_RING,
+    MODULATION_TREMOLO,
+    MODULATION_VIBRATO,
+} modulation_t;
+
+float modulate(modulation_t modulation, int sample_rate, oscillator_t *carrier, oscillator_t *modulator);
 
 typedef struct adsr_t
 {
@@ -61,7 +73,8 @@ float filter(const filter_t *filter, filter_state_t *state, float sample);
 
 typedef struct instrument_t
 {
-    oscillator_t oscillator;
+    modulation_t modulation;
+    oscillator_t carrier, modulator;
     adsr_t adsr;
 
     filter_t filter;
