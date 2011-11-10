@@ -8,7 +8,7 @@
 #include <synth.h>
 #include <audio_output.h>
 
-static int main_loop()
+static int main_loop(synth_t *synth)
 {
     bool quit = false;
 
@@ -25,6 +25,13 @@ static int main_loop()
             if(event.type == SDL_KEYDOWN &&
                 event.key.keysym.sym == SDLK_ESCAPE)
                 quit = true;
+            else if(event.type == SDL_KEYDOWN)
+            {
+                SDL_LockAudio();
+                for(int i = 0; i < 3; ++i)
+                    adsr_trigger(&synth->instruments[i].adsr);
+                SDL_UnlockAudio();
+            }
         }
     }
 
@@ -79,7 +86,7 @@ int main(int argc, char *argv[])
 
     SDL_PauseAudio(0);
 
-    int err = main_loop();
+    int err = main_loop(&synth);
 
     SDL_PauseAudio(1);
 
