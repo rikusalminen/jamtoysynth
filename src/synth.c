@@ -11,17 +11,24 @@ static float note_freq(int i)
 
 int synth_init(synth_t *synth, int sample_rate)
 {
+    memset(synth, 0, sizeof(synth_t));
     synth->sample_rate = sample_rate;
-    memset(synth->instruments, 0, SYNTH_MAX_INSTRUMENTS * sizeof(instrument_t));
+
+
+    for(instrument_t *instrument = synth->instruments;
+        instrument != synth->instruments + SYNTH_MAX_INSTRUMENTS;
+        ++instrument)
+    {
+        instrument_adsr(instrument, sample_rate, 0.1, 1.0, 0.7, 1.5);
+        instrument_trigger(instrument);
+    }
 
     synth->instruments[0].freq = note_freq(60);
     synth->instruments[0].amplitude = 0.3;
-
     synth->instruments[1].freq = note_freq(64);
-    synth->instruments[1].amplitude = 0.3;
-
+    synth->instruments[1].amplitude = 0.2;
     synth->instruments[2].freq = note_freq(67);
-    synth->instruments[2].amplitude = 0.3;
+    synth->instruments[2].amplitude = 0.2;
 
     return 0;
 }
