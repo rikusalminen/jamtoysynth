@@ -1,10 +1,14 @@
 #ifndef SYNTH_H
 #define SYNTH_H
 
+#include <instrument.h>
+
+#define SYNTH_MAX_INSTRUMENTS 16
+
 typedef struct synth_t
 {
     int sample_rate;
-    float phase;
+    instrument_t instruments[SYNTH_MAX_INSTRUMENTS];
 } synth_t;
 
 int synth_init(synth_t *synth, int sample_rate);
