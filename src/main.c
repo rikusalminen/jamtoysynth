@@ -45,6 +45,8 @@ static int main_loop(synth_t *synth)
             if(event.type == SDL_KEYDOWN &&
                 event.key.keysym.sym == SDLK_ESCAPE)
                 quit = true;
+            else if(event.type == SDL_KEYDOWN && event.key.keysym.sym >= SDLK_F1 && event.key.keysym.sym <= SDLK_F12)
+                base_octave = event.key.keysym.sym - SDLK_F1;
             else if(event.type == SDL_KEYDOWN)
             {
                 for(int i = 0; i < num_keys; ++i)
