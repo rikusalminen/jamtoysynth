@@ -8,20 +8,26 @@ int synth_init(synth_t *synth, int sample_rate)
     memset(synth, 0, sizeof(synth_t));
     synth->sample_rate = sample_rate;
 
-
-    for(instrument_t *instrument = synth->instruments;
-        instrument != synth->instruments + SYNTH_MAX_INSTRUMENTS;
-        ++instrument)
+    for(instrument_control_t *controls = synth->controls;
+        controls != synth->controls + SYNTH_MAX_INSTRUMENTS;
+        ++controls)
     {
-        instrument->modulation = MODULATION_FREQUENCY;
-        instrument->carrier.waveform = OSCILLATOR_TRIANGLE;
-        instrument->carrier.amplitude = 0.7;
-        instrument->modulator.waveform = OSCILLATOR_SINE;
-        instrument->modulator.freq = 2.0;
-        instrument->modulator.amplitude = 0.6;
+        controls->modulation = MODULATION_VIBRATO;
+        controls->carrier = OSCILLATOR_SINE;
+        controls->carrier_amplitude = 0.6;
+        controls->modulator = OSCILLATOR_SQUARE;
+        controls->modulator_freq = 2.0;
+        controls->modulator_amplitude = 0.6;
 
-        adsr_set(&instrument->adsr, sample_rate, 0.1, 1.0, 0.7, 1.5);
-        filter_set(&instrument->filter, sample_rate, FILTER_LOWPASS, 500, 0.5, 0.5);
+        controls->attack = 0.1;
+        controls->decay = 1.0;
+        controls->sustain = 0.7;
+        controls->release = 1.5;
+
+        controls->filter = FILTER_LOWPASS;
+        controls->filter_freq = 500.0;
+        controls->filter_resonance = 0.5;
+        controls->filter_gain = 0.5;
     }
 
     return 0;
@@ -30,6 +36,12 @@ int synth_init(synth_t *synth, int sample_rate)
 void synth_cleanup(synth_t *synth)
 {
     (void)synth;
+}
+
+void synth_control(synth_t *synth)
+{
+    for(int i = 0; i < SYNTH_MAX_INSTRUMENTS; ++i)
+        instrument_control(synth->instruments + i, synth->controls + i, synth->sample_rate);
 }
 
 void synth_mix(synth_t *synth, float *left, float *right)

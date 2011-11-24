@@ -55,10 +55,6 @@ void adsr_set(adsr_t *adsr, int sample_rate, float attack, float decay, float su
     adsr->releaseG = expf(-1.0 / (release * sample_rate));
     adsr->sustain = sustain;
     adsr->decay = decay * sample_rate;
-    adsr->decay_timer = 0;
-
-    adsr->adsrX = 0;
-    adsr->adsrG = 0;
 }
 
 void adsr_trigger(adsr_t *adsr)
@@ -190,6 +186,32 @@ float filter(const filter_t *filter, filter_state_t *state, float sample)
     state->y1 = out;
 
     return out;
+}
+
+void instrument_control(instrument_t *instrument, const instrument_control_t *control, int sample_rate)
+{
+    instrument->modulation = control->modulation;
+
+    instrument->carrier.waveform = control->carrier;
+    instrument->carrier.amplitude = control->carrier_amplitude;
+
+    instrument->modulator.waveform = control->modulator;
+    instrument->modulator.amplitude = control->modulator_amplitude;
+    instrument->modulator.freq = control->modulator_freq;
+
+    adsr_set(&instrument->adsr,
+        sample_rate,
+        control->attack,
+        control->decay,
+        control->sustain,
+        control->release);
+
+    filter_set(&instrument->filter,
+        sample_rate,
+        control->filter,
+        control->filter_freq,
+        control->filter_resonance,
+        control->filter_gain);
 }
 
 void instrument_play(instrument_t *instrument, int sample_rate, float *left, float *right)

@@ -69,6 +69,8 @@ void audio_callback(void *userdata, uint8_t *stream, int len)
 
     int num_samples = len / (bits/8) / params->audiospec.channels;
 
+    synth_control(params->synth);
+
     for(int i = 0; i < num_samples; ++i)
     {
         float out_samples[2];
