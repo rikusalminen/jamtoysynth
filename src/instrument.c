@@ -188,6 +188,20 @@ float filter(const filter_t *filter, filter_state_t *state, float sample)
     return out;
 }
 
+float echo(echo_t *echo, float sample)
+{
+    int read_cursor =
+        echo->cursor >= echo->delay_samples ?
+        echo->cursor - echo->delay_samples :
+        ECHO_BUFFER_SIZE - (echo->delay_samples - echo->cursor) % ECHO_BUFFER_SIZE;
+
+    float delay_sample = echo->buffer[read_cursor];
+    echo->buffer[echo->cursor] = sample + echo->feedback * delay_sample;
+    echo->cursor = (echo->cursor + 1) % ECHO_BUFFER_SIZE;
+
+    return sample + echo->level * delay_sample;
+}
+
 void instrument_control(instrument_t *instrument, const instrument_control_t *control, int sample_rate)
 {
     instrument->modulation = control->modulation;
@@ -212,15 +226,20 @@ void instrument_control(instrument_t *instrument, const instrument_control_t *co
         control->filter_freq,
         control->filter_resonance,
         control->filter_gain);
+
+    instrument->echo.delay_samples = control->echo_delay * sample_rate;
+    instrument->echo.feedback = control->echo_feedback;
+    instrument->echo.level = control->echo_level;
 }
 
 void instrument_play(instrument_t *instrument, int sample_rate, float *left, float *right)
 {
     float sample =
-        filter(&instrument->filter, &instrument->filter1,
-            filter(&instrument->filter, &instrument->filter0,
-                adsr_envelope(&instrument->adsr) *
-                modulate(instrument->modulation, sample_rate, &instrument->carrier, &instrument->modulator)));
+        echo(&instrument->echo,
+            filter(&instrument->filter, &instrument->filter1,
+                filter(&instrument->filter, &instrument->filter0,
+                    adsr_envelope(&instrument->adsr) *
+                    modulate(instrument->modulation, sample_rate, &instrument->carrier, &instrument->modulator))));
 
     *left = sample;
     *right = sample;

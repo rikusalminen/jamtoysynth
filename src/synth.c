@@ -14,7 +14,7 @@ int synth_init(synth_t *synth, int sample_rate)
     {
         controls->modulation = MODULATION_VIBRATO;
         controls->carrier = OSCILLATOR_SINE;
-        controls->carrier_amplitude = 0.6;
+        controls->carrier_amplitude = 0.5;
         controls->modulator = OSCILLATOR_SQUARE;
         controls->modulator_freq = 2.0;
         controls->modulator_amplitude = 0.6;
@@ -28,6 +28,10 @@ int synth_init(synth_t *synth, int sample_rate)
         controls->filter_freq = 500.0;
         controls->filter_resonance = 0.5;
         controls->filter_gain = 0.5;
+
+        controls->echo_delay = 1.0;
+        controls->echo_feedback = 0.4;
+        controls->echo_level = 0.3;
     }
 
     return 0;

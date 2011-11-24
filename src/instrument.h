@@ -1,6 +1,8 @@
 #ifndef INSTRUMENT_H
 #define INSTRUMENT_H
 
+#define ECHO_BUFFER_SIZE 96000 // 2 seconds @ 48 kHz
+
 typedef enum oscillator_waveform_t
 {
     OSCILLATOR_ZERO = 0,
@@ -71,6 +73,16 @@ typedef enum filter_type_t
 void filter_set(filter_t *filter, int sample_rate, filter_type_t type, float f0, float Q, float dBgain);
 float filter(const filter_t *filter, filter_state_t *state, float sample);
 
+typedef struct echo_t
+{
+    float buffer[ECHO_BUFFER_SIZE];
+    int cursor;
+    int delay_samples;
+    float feedback, level;
+} echo_t;
+
+float echo(echo_t *echo, float sample);
+
 typedef struct instrument_control_t
 {
     modulation_t modulation;
@@ -83,6 +95,8 @@ typedef struct instrument_control_t
 
     filter_type_t filter;
     float filter_freq, filter_resonance, filter_gain;
+
+    float echo_delay, echo_feedback, echo_level;
 } instrument_control_t;
 
 typedef struct instrument_t
@@ -93,6 +107,8 @@ typedef struct instrument_t
 
     filter_t filter;
     filter_state_t filter0, filter1;
+
+    echo_t echo;
 } instrument_t;
 
 void instrument_control(instrument_t *instrument, const instrument_control_t *control, int sample_rate);
